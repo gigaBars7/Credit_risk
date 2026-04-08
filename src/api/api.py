@@ -3,16 +3,20 @@ import uvicorn
 from pydantic import BaseModel, Field
 import pandas as pd
 import numpy as np
+import joblib
 
+
+MODEL_PATH = '../../models/Ensemble/ensemble.pkl'
 
 app = FastAPI()
+model = joblib.load(MODEL_PATH)
 
 
 class DataScheme(BaseModel):
-    RevolvingUtilizationOfUnsecuredLines: int = Field(ge=0, le=1e6)
+    RevolvingUtilizationOfUnsecuredLines: float = Field(ge=0, le=1)
     age: int = Field(ge=0, le=120)
-    DebtRatio: int = Field(ge=0, le=1e7)
-    MonthlyIncome: int = Field(ge=0, le=1e7)
+    DebtRatio: float = Field(ge=0, le=1)
+    MonthlyIncome: int = Field(ge=0, le=1e6)
     NumberOfOpenCreditLinesAndLoans: int = Field(ge=0, le=100)
     NumberOfTime30_59DaysPastDueNotWorse: int = Field(ge=0, le=100)
     NumberOfTime60_89DaysPastDueNotWorse: int = Field(ge=0, le=100)
@@ -51,7 +55,7 @@ def calc_data(data: DataScheme):
         'DebtRatio_high': int(float(d['DebtRatio']) > 1.0),
         'Late_severity_log': late_severity_log,
         'Late_per_credit': float(
-            late_severity_log / int(d['NumberOfOpenCreditLinesAndLoans']) + 1e-5
+            late_severity_log / (int(d['NumberOfOpenCreditLinesAndLoans']) + 1e-5)
         ),
         'Is_old': int(int(d['age']) > 55),
     }
@@ -59,6 +63,7 @@ def calc_data(data: DataScheme):
     columns_order = [
         'RevolvingUtilizationOfUnsecuredLines',
         'age',
+        'DebtRatio',
         'MonthlyIncome',
         'NumberOfOpenCreditLinesAndLoans',
         'NumberOfTimes90DaysLate',
@@ -79,8 +84,12 @@ def calc_data(data: DataScheme):
 
 @app.post('/credit_risk')
 def credit_risk(data: DataScheme):
-    return data
+    X = calc_data(data)
+    prob = float(model.predict_proba(X)[0,1])
+    return {
+        'credit_risk': prob
+    }
 
 
 if __name__ == '__main__':
-    uvicorn.run('main:app', host='0.0.0.0', port=8080)
+    uvicorn.run(app, host='0.0.0.0', port=8080)
