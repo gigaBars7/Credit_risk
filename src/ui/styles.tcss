@@ -1,0 +1,90 @@
+#app {
+    layout: vertical;
+    width: 100%;
+    height: 1fr;
+    padding: 1;
+}
+
+.content {
+    background: $surface;
+}
+
+#main_block {
+    layout: vertical;
+    height: 1fr;
+}
+
+#features_list {
+    layout: vertical;
+    height: 1fr;
+    overflow-y: auto;
+}
+
+.feature {
+    layout: horizontal;
+    width: 1fr;
+    height: 3;
+    padding: 0 1;
+    margin: 1;
+}
+
+.feature_label {
+    width: auto;
+    height: 1fr;
+    margin-right: 1;
+    content-align: left middle;
+}
+
+.feature_input {
+    width: 24;
+}
+
+#result_content {
+    layout: vertical;
+    height: auto;
+    margin-top: 1;
+}
+
+#result_row {
+    layout: horizontal;
+    width: 100%;
+    height: auto;
+    padding: 1;
+}
+
+#result_button {
+    width: auto;
+    height: 1;
+    align: center middle;
+}
+
+#result_values {
+    layout: horizontal;
+    width: 1fr;
+    height: auto;
+    margin-left: 1;
+}
+
+#rating_value {
+    height: 1;
+    content-align: left middle;
+}
+
+#status_value {
+    width: 1fr;
+    height: 1;
+    margin-left: 1;
+    content-align: left middle;
+}
+
+.status-low {
+    color: $success;
+}
+
+.status-medium {
+    color: $warning;
+}
+
+.status-high {
+    color: $error;
+}
