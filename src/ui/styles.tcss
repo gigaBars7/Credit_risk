@@ -77,14 +77,30 @@
     content-align: left middle;
 }
 
-.status-low {
-    color: $success;
+.status-minimal {
+    color: $success-darken-2;
 }
 
-.status-medium {
-    color: $warning;
+.status-low {
+    color: $success-darken-1;
+}
+
+.status-moderate {
+    color: $warning-darken-2;
+}
+
+.status-elevated {
+    color: $warning-darken-1;
+}
+
+.status-bad {
+    color: $error-darken-2;
 }
 
 .status-high {
+    color: $error-darken-1;
+}
+
+.status-critical {
     color: $error;
 }

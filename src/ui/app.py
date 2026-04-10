@@ -19,6 +19,14 @@ DATA_SCHEME_FIELDS = [
 ]
 
 API_URL = os.getenv("API_URL", "http://localhost:8080").rstrip("/")
+RISK_STATUS_THRESHOLDS = [
+    (0.10, "минимальный риск", "status-minimal"),
+    (0.25, "низкий риск", "status-low"),
+    (0.35, "умеренный риск", "status-moderate"),
+    (0.45, "повышенный риск", "status-elevated"),
+    (0.50, "плохой рейтинг", "status-bad"),
+    (0.60, "высокий риск", "status-high"),
+]
 
 
 class CreditRiskApp(App[None]):
@@ -49,13 +57,27 @@ class CreditRiskApp(App[None]):
     def set_status(self, text: str, status_class: str | None = None):
         status_label = self.query_one("#status_value", Label)
         status_label.update(f"Статус: {text}")
-        status_label.remove_class("status-low", "status-medium", "status-high")
+        status_label.remove_class(
+            "status-minimal",
+            "status-low",
+            "status-moderate",
+            "status-elevated",
+            "status-bad",
+            "status-high",
+            "status-critical",
+        )
         if status_class is not None:
             status_label.add_class(status_class)
 
     def set_result(self, rating: float, status: str, status_class: str | None = None):
         self.set_rating(rating)
         self.set_status(status, status_class)
+
+    def get_risk_status(self, risk: float) -> tuple[str, str]:
+        for threshold, status, status_class in RISK_STATUS_THRESHOLDS:
+            if risk < threshold:
+                return status, status_class
+        return "критический риск", "status-critical"
 
     def collect_payload(self) -> dict[str, int | float]:
         payload: dict[str, int | float] = {}
@@ -65,11 +87,12 @@ class CreditRiskApp(App[None]):
             payload[field_name] = field_type(raw_value)
         return payload
 
-    async def send_credit_risk_request(self) -> None:
-        payload = self.collect_payload()
+    async def send_credit_risk_request(self, payload: dict[str, int | float]) -> float:
         async with httpx.AsyncClient(timeout=10) as client:
             response = await client.post(f"{API_URL}/credit_risk", json=payload)
             response.raise_for_status()
+        data = response.json()
+        return float(data["credit_risk"])
 
     async def on_button_pressed(self, event: Button.Pressed) -> None:
         if event.button.id != "result_button":
@@ -78,11 +101,20 @@ class CreditRiskApp(App[None]):
         button = event.button
         button.disabled = True
         try:
-            await self.send_credit_risk_request()
+            payload = self.collect_payload()
         except ValueError:
             self.notify("Проверьте значения полей", severity="error")
+            button.disabled = False
+            return
+
+        try:
+            risk = await self.send_credit_risk_request(payload)
+            status, status_class = self.get_risk_status(risk)
+            self.set_result(risk, status, status_class)
         except httpx.HTTPError as exc:
             self.notify(f"Не удалось отправить запрос: {exc}", severity="error")
+        except (KeyError, TypeError, ValueError):
+            self.notify("API вернул некорректный ответ", severity="error")
         finally:
             button.disabled = False
 
