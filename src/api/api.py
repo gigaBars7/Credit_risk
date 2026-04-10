@@ -4,9 +4,10 @@ from pydantic import BaseModel, Field
 import pandas as pd
 import numpy as np
 import joblib
+from pathlib import Path
 
 
-MODEL_PATH = '../../models/Ensemble/ensemble.pkl'
+MODEL_PATH = Path(__file__).resolve().parents[2] / 'models' / 'Ensemble' / 'ensemble.pkl'
 
 app = FastAPI()
 model = joblib.load(MODEL_PATH)
